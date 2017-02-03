@@ -6,11 +6,15 @@ require 'nokogiri'
 load 'twitter_parser.rb'
 
 class TwitterCrawler
-  def initialize(search_term, operator, requests)
+  def initialize(search_term, operator, requests, cm_hash)
     @search_term = search_term
     @operator = operator
     @requests = requests
     @output = Array.new
+
+    # Handle crawler manager info
+    @cm_url = cm_hash[:crawler_manager_url] if cm_hash
+    @selector_id = cm_hash[:selector_id] if cm_hash
   end
 
   # Generate advanced query
@@ -36,9 +40,15 @@ class TwitterCrawler
 
     # Parse each tweet
     tweets.each do |tweet|
+      # Parse tweet
       tweet_html = tweet.attribute("innerHTML")
       parser = TwitterParser.new(tweet_html)
-      @output.push(parser.parse_tweet)
+      parsed_tweet = parser.parse_tweet
+
+      # Report results
+      if parsed_tweet
+        report_results([parsed_tweet], parsed_tweet[:tweet_link])
+      end
     end
   end
 
@@ -55,6 +65,31 @@ class TwitterCrawler
     if tweet_count > last_tweet_num
       scroll_down(tweet_count)
     end   
+  end
+
+  # Figure out how to report results
+  def report_results(results, link)
+    if @cm_url
+      report_incremental(results, link)
+    else
+      report_batch(results)
+    end
+  end
+
+  # Report all results in one JSON
+  def report_batch(results)
+    results.each do |result|
+      @output.push(result)
+    end
+  end
+
+  # Report results back to Harvester incrementally
+  def report_incremental(results, link)
+    curl_url = @cm_url+"/relay_results"
+    c = Curl::Easy.http_post(curl_url,
+                             Curl::PostField.content('selector_id', @selector_id),
+                             Curl::PostField.content('status_message', "Collected " + link),
+                             Curl::PostField.content('results', JSON.pretty_generate(results)))
   end
 
   # Generate JSON for output
