@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'twittercrawler'
-  s.version     = '0.0.5'
-  s.date        = '2017-02-03'
+  s.version     = '0.0.6'
+  s.date        = '2017-02-07'
   s.summary     = 'Crawls Twitter'
   s.description = 'Crawls Twitter'
   s.authors     = ['M. C. McGrath']

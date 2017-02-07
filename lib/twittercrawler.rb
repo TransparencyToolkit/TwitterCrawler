@@ -2,14 +2,14 @@ require 'requestmanager'
 require 'selenium-webdriver'
 require 'pry'
 require 'nokogiri'
+require 'curb'
 
 load 'twitter_parser.rb'
 
 class TwitterCrawler
-  def initialize(search_term, operator, requests, cm_hash)
+  def initialize(search_term, operator, cm_hash)
     @search_term = search_term
     @operator = operator
-    @requests = requests
     @output = Array.new
 
     # Handle crawler manager info
@@ -26,45 +26,56 @@ class TwitterCrawler
     end
   end
 
-  def crawl
-    @requests.get_page("https://twitter.com/search?f=tweets&q="+gen_query)
-    scroll_down(0)
-    get_tweets
-    @requests.close_all_browsers
-  end
-
-  # Get the tweets on the page
-  def get_tweets
-    browser = @requests.get_most_recent_browser[1].first
-    tweets = browser.find_elements(class: "tweet")
-
-    # Parse each tweet
-    tweets.each do |tweet|
-      # Parse tweet
-      tweet_html = tweet.attribute("innerHTML")
-      parser = TwitterParser.new(tweet_html)
-      parsed_tweet = parser.parse_tweet
-
-      # Report results
-      if parsed_tweet
-        report_results([parsed_tweet], parsed_tweet[:tweet_link])
-      end
+  # Parse the tweets into html
+  def parse_tweets(tweets)
+    return tweets.map do |tweet|
+      parser = TwitterParser.new(tweet.to_html)
+      parser.parse_tweet
     end
   end
 
-  # Scroll down to the bottom
-  def scroll_down(last_tweet_num)
-    # Scroll down to last tweet
-    browser = @requests.get_most_recent_browser[1].first
-    tweets = browser.find_elements(class: "tweet")
-    tweets[tweets.length-2].location_once_scrolled_into_view
+  # Generate the query url for Twitter
+  def gen_query_url(start_tweet, end_tweet)
+    # Base query url
+    query_url = "https://twitter.com/i/search/timeline?f=tweets&vertical=news&q="+gen_query+"&src=typd&include_available_features=1&include_entities=1"
 
-    # Check if it should be rerun
-    sleep(1)
-    tweet_count = browser.find_elements(class: "tweet").length
-    if tweet_count > last_tweet_num
-      scroll_down(tweet_count)
-    end   
+    # Gen query URL
+    if start_tweet && end_tweet
+      query_url += "&max_position=TWEET-"+start_tweet+"-"+end_tweet
+    end
+    return query_url
+  end
+
+  # Query tweets
+  def query_tweets(start_tweet, end_tweet)
+    # Run Query and parse results
+    c = Curl::Easy.perform(gen_query_url(start_tweet, end_tweet))
+    curl_items = JSON.parse(c.body_str)
+    tweets = Nokogiri::HTML.parse(curl_items["items_html"]).css(".tweet") if curl_items["items_html"]
+
+    # Save results
+    parsed_tweets = parse_tweets(tweets)
+    report_results(parsed_tweets, "Saving "+parsed_tweets.length.to_s+" tweets")
+    
+    # Recurse when needed
+    if !parsed_tweets.empty?
+      start_tweet, end_tweet = get_tweet_range(parsed_tweets, end_tweet)
+      query_tweets(start_tweet, end_tweet)
+    end
+  end
+
+  # Get the ID for a tweet
+  def get_tweet_id(tweet)
+    return tweet[:tweet_link].split("/").last
+  end
+  
+  # Get start and end tweets
+  def get_tweet_range(parsed_tweets, end_tweet)
+    if end_tweet # Keeep latest tweet as same
+      return get_tweet_id(parsed_tweets.last), end_tweet
+    else # Get updated start tweet
+      return get_tweet_id(parsed_tweets.last), get_tweet_id(parsed_tweets.first)
+    end
   end
 
   # Figure out how to report results
@@ -97,4 +108,5 @@ class TwitterCrawler
     JSON.pretty_generate(@output)
   end
 end
+
 

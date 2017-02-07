@@ -22,7 +22,8 @@ class TwitterParser
         favorite_count: get_favorite_count,
         reply_count: get_reply_count,
         mention_names: get_mentions[0],
-        mention_uids: get_mentions[1]
+        mention_uids: get_mentions[1],
+        time_collected: Time.now
       }
     end
   end
