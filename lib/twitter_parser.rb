@@ -23,7 +23,8 @@ class TwitterParser
         reply_count: get_reply_count,
         mention_names: get_mentions[0],
         mention_uids: get_mentions[1],
-        time_collected: Time.now
+        time_collected: Time.now,
+        date_searchable: get_tweet_time
       }
     end
   end
