@@ -55,7 +55,7 @@ class TwitterCrawler
 
     # Save results
     parsed_tweets = parse_tweets(tweets)
-    report_results(parsed_tweets, "Saving "+parsed_tweets.length.to_s+" tweets")
+    report_results(parsed_tweets, parsed_tweets.length.to_s+" tweets")
     
     # Recurse when needed
     if !parsed_tweets.empty?
