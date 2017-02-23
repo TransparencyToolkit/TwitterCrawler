@@ -1,7 +1,9 @@
 require 'nokogiri'
 require 'pry'
+require 'twitter-text'
 
 class TwitterParser
+  include Twitter::Extractor
   def initialize(tweet)
     @tweet = Nokogiri::HTML.parse(tweet)
   end
@@ -14,6 +16,9 @@ class TwitterParser
         username: get_username,
         fullname: get_fullname,
         user_id: get_user_id,
+        profile_pic: get_profile_pic,
+        hashtags: get_hashtags,
+        mentioned_urls: get_mentioned_urls,
         reply_to_user: get_reply_to_user[0],
         reply_to_uid: get_reply_to_user[1],
         tweet_time: get_tweet_time,
@@ -27,6 +32,23 @@ class TwitterParser
         date_searchable: get_tweet_time
       }
     end
+  end
+
+  # Get the link to the profile pic
+  def get_profile_pic
+    @tweet.css("img.avatar")[0]['src']
+  end
+
+  # Get the URLS in the tweet
+  def get_mentioned_urls
+    tweet = get_tweet_text
+    return extract_urls(tweet)
+  end
+
+  # Get the hashtags in the tweet
+  def get_hashtags
+    tweet = get_tweet_text
+    return extract_hashtags(tweet)
   end
 
   # Get the username
