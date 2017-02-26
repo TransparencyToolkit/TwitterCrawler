@@ -108,5 +108,3 @@ class TwitterCrawler
     JSON.pretty_generate(@output)
   end
 end
-
-

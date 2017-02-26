@@ -19,8 +19,11 @@ class TwitterParser
         profile_pic: get_profile_pic,
         hashtags: get_hashtags,
         mentioned_urls: get_mentioned_urls,
+        conversation_id: get_conversation_id,
+        is_reply_to: get_is_reply_to,
         reply_to_user: get_reply_to_user[0],
         reply_to_uid: get_reply_to_user[1],
+		tweet_id: get_tweet_id,
         tweet_time: get_tweet_time,
         tweet_link: get_tweet_link,
         retweet_count: get_retweet_count,
@@ -34,34 +37,31 @@ class TwitterParser
     end
   end
 
-  # Get the link to the profile pic
+  # Get URL to the profile pic
   def get_profile_pic
     @tweet.css("img.avatar")[0]['src']
   end
 
-  # Get the URLS in the tweet
+  # Get URLS in the tweet
   def get_mentioned_urls
     tweet = get_tweet_text
     return extract_urls(tweet)
   end
 
-  # Get the hashtags in the tweet
+  # Get hashtags in the tweet
   def get_hashtags
     tweet = get_tweet_text
     return extract_hashtags(tweet)
   end
 
-  # Get the username
   def get_username
-    @tweet.css(".username").text
+	@tweet.css(".tweet")[0]["data-screen-name"]
   end
 
-  # Get the fullname
   def get_fullname
     @tweet.css(".fullname").text
   end
 
-  # Get user ID number
   def get_user_id
     @tweet.css(".js-user-profile-link").css(".account-group")[0]["data-user-id"]
   end
@@ -71,36 +71,44 @@ class TwitterParser
     @tweet.css(".js-tweet-text-container").text.lstrip.strip
   end
 
-  # Get the time for the tweet
+  # Get the time of the tweet
   def get_tweet_time
     DateTime.parse(@tweet.css(".tweet-timestamp")[0]["title"]).strftime('%d %b %Y %H:%M:%S')
   end
 
-  # Get the link to the tweet
-  def get_tweet_link
-    "https://twitter.com"+@tweet.css(".tweet-timestamp")[0]['href']
+  def get_tweet_id
+	@tweet.css(".tweet")[0]["data-tweet-id"]
   end
 
-  # Get the # of retweets
+  def get_tweet_link
+    "https://twitter.com"+@tweet.css(".tweet")[0]["data-permalink-path"]
+  end
+
   def get_retweet_count
     @tweet.css(".ProfileTweet-action--retweet")[0].css("span")[0]['data-tweet-stat-count']
   end
 
-  # Get the # of favorites
   def get_favorite_count
     @tweet.css(".ProfileTweet-action--favorite")[0].css("span")[0]['data-tweet-stat-count']
   end
 
-  # Get the # of replies
+  def get_conversation_id
+	@tweet.css(".tweet")[0]["data-conversation-id"]
+  end
+
+  def get_is_reply_to
+    @tweet.css(".tweet")[0]["data-is-reply-to"]
+  end
+
   def get_reply_count
     @tweet.css(".ProfileTweet-action--reply")[0].css("span")[0]['data-tweet-stat-count']
   end
 
-  # Get the user tweet is replying to (if any)
+  # The user of the tweet that is being replied to (if any)
   def get_reply_to_user
     reply_to = @tweet.css("span").select{|s| s.text.include?("In reply")}[0]
     if reply_to
-      reply_to_user = reply_to.css("a")[0]['href'].gsub("/", "@")
+      reply_to_user = reply_to.css("a")[0]['href'].gsub("/", "")
       reply_to_uid = reply_to.css("a")[0]['data-user-id']
       return reply_to_user, reply_to_uid
     else
@@ -108,11 +116,11 @@ class TwitterParser
     end
   end
 
-  # Get the mentioned accounts (if any)
+  # Get account names and uids that are mentioned
   def get_mentions
     mentions = @tweet.css(".twitter-atreply")
     if !mentions.empty?
-      mention_names = mentions.map{|t| t.text}
+      mention_names = mentions.map{|t| t.css("b").text}
       mention_uids = mentions.map{|t| t['data-mentioned-user-id']}
       return mention_names, mention_uids
     else
