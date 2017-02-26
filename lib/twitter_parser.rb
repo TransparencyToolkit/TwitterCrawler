@@ -23,7 +23,7 @@ class TwitterParser
         is_reply_to: get_is_reply_to,
         reply_to_user: get_reply_to_user[0],
         reply_to_uid: get_reply_to_user[1],
-		tweet_id: get_tweet_id,
+	tweet_id: get_tweet_id,
         tweet_time: get_tweet_time,
         tweet_link: get_tweet_link,
         retweet_count: get_retweet_count,
@@ -55,7 +55,7 @@ class TwitterParser
   end
 
   def get_username
-	@tweet.css(".tweet")[0]["data-screen-name"]
+    @tweet.css(".tweet")[0]["data-screen-name"]
   end
 
   def get_fullname
@@ -77,7 +77,7 @@ class TwitterParser
   end
 
   def get_tweet_id
-	@tweet.css(".tweet")[0]["data-tweet-id"]
+    @tweet.css(".tweet")[0]["data-tweet-id"]
   end
 
   def get_tweet_link
