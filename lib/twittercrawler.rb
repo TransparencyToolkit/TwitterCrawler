@@ -37,7 +37,7 @@ class TwitterCrawler
   # Generate the query url for Twitter
   def gen_query_url(start_tweet, end_tweet)
     # Base query url
-    query_url = "https://twitter.com/i/search/timeline?f=tweets&vertical=news&q="+gen_query+"&src=typd&include_available_features=1&include_entities=1"
+    query_url = "https://twitter.com/i/search/timeline?f=tweets&vertical=news&q="+gen_query+"&src=typd&include_available_features=1&include_entities=1&lang=en"
 
     # Gen query URL
     if start_tweet && end_tweet
@@ -108,3 +108,4 @@ class TwitterCrawler
     JSON.pretty_generate(@output)
   end
 end
+
